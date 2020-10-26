@@ -43,6 +43,7 @@ entity CtrlModule is
 		host_divert_keyboard : out std_logic;
 		host_reset_n : out std_logic;
 		host_reset_loader : out std_logic;
+		host_download : out std_logic;
 		
 		-- Boot upload signals
 		host_bootdata : out std_logic_vector(31 downto 0);
@@ -281,6 +282,7 @@ begin
 		kbdrecvreg <='0';
 		host_reset_n <='0';
 		host_reset_loader <='0';
+		host_download <='0';
 		host_bootdata_req<='0';
 		spi_active<='0';
 		spi_cs<='1';
@@ -331,7 +333,8 @@ begin
 							host_reset_n<=not mem_write(0);
 							host_divert_keyboard<=mem_write(1);
 							host_divert_sdcard<=mem_write(2);
-							host_reset_loader <=mem_write(3);--Antes era el (5)
+							host_reset_loader <=mem_write(3);
+							host_download <=mem_write(4);
 							--host_select<=mem_write(3);
 							--host_start<=mem_write(4);
 							--host_master_reset <=mem_write(6);

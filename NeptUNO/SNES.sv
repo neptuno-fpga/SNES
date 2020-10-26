@@ -59,7 +59,7 @@ module SNES_NEPTUNO_TOP
    output        JOY_LOAD,
    input         JOY_DATA,
    output        joyP7_o,
-	output        stm_rst_o = 1'b0
+	output        stm_rst_o
 	
 );
 
@@ -75,6 +75,7 @@ assign SRAM_D[15:12] = 4'hZ;
 assign SRAM_D[11:8] = {LRCLK, SDIN, SCLK, MCLK};
 assign SRAM_D[7:0] = 8'hZZ;
 assign SRAM_nOE = 1'b1;
+assign stm_rst_o = 1'b0;
 
 assign LED  = ~ioctl_download & ~bk_ena;
 
@@ -89,6 +90,8 @@ wire [1:0] scanlines = {1'b0, dipswitches[2]};
 wire       joy_swap = dipswitches[3];
 wire       video_region = dipswitches[4];
 wire       BLEND = ~dipswitches[5];
+wire [1:0] joy_map_1 = dipswitches[7:6];
+wire [1:0] joy_map_2 = dipswitches[9:8];
 
 
 ////////////////////   CLOCKS   ///////////////////
@@ -108,17 +111,12 @@ pll pll
 
 reg reset;
 always @(posedge clk_sys) begin
-	reset <= ~BUTTON | ~host_reset_n ;
+	reset <= ~BUTTON | ~host_reset_n;
 end
 
 //////////////////   MiST I/O   ///////////////////
 
-wire  [1:0] buttons;
 wire [31:0] status = 32'h00000000;
-wire        ypbpr;
-wire        scandoubler_disable;
-//wire        no_csync;
-
 reg         ioctl_wrD;
 
 /*
@@ -650,13 +648,35 @@ sega_joystick joy
  .joy2_p9_i		(joy2fire2),
  .vga_hsync_n_s(HSYNC),
  .joyX_p7_o		(joyP7_o),
- .joy1_o			(joy1_o),
- .joy2_o			(joy2_o)
+ .joy1_o			(joy1_o),   // Mode X Y Z Start A C B Right Left Down Up
+ .joy2_o			(joy2_o)    //  11 10 9 8   7   6 5 4   3    2     1   0
 );
 
 
-wire [11:0] joy0 = {~joy1_o[7] | scanSW[10], ~joy1_o[11] | scanSW[11], ~joy1_o[8] | scanSW[9], ~joy1_o[10] | scanSW[8], ~joy1_o[9] | scanSW[7], ~joy1_o[6] | scanSW[6], ~joy1_o[4] | scanSW[5], ~joy1_o[5] | scanSW[4], ~joy1_o[0] | scanSW[0], ~joy1_o[1] | scanSW[1], ~joy1_o[2] | scanSW[2], ~joy1_o[3] | scanSW[3]};
-wire [11:0] joy1 = {~joy2_o[7] | scanSW[23], ~joy2_o[11] | scanSW[24], ~joy2_o[8] | scanSW[22], ~joy2_o[10] | scanSW[21], ~joy2_o[9] | scanSW[20], ~joy2_o[6] | scanSW[19], ~joy2_o[4] | scanSW[18], ~joy2_o[5] | scanSW[17], ~joy2_o[0] | scanSW[12], ~joy2_o[1] | scanSW[13] | scanSW[14], ~joy2_o[2] | scanSW[15], ~joy2_o[3] | scanSW[16]};
+// Joystick button mapping
+// A: A=X B=B C=A X=L Y=Y Z=R
+// B: A=L B=Y C=X X=R Y=B Z=A
+// C: A=R B=B C=A X=L Y=Y Z=X
+// D: A=Y B=L C=R X=B Y=A Z=X
+wire p1r, p1l, p1y, p1x, p1b, p1a;
+wire p2r, p2l, p2y, p2x, p2b, p2a;
+assign p1r = (joy_map_1 == 2'b01) ? ~joy1_o[10] : (joy_map_1 == 2'b10) ? ~joy1_o[6] : (joy_map_1 == 2'b11) ? ~joy1_o[5] : ~joy1_o[8];
+assign p1l = (joy_map_1 == 2'b01) ? ~joy1_o[6] : (joy_map_1 == 2'b10) ? ~joy1_o[10] : (joy_map_1 == 2'b11) ? ~joy1_o[4] : ~joy1_o[10];
+assign p1y = (joy_map_1 == 2'b01) ? ~joy1_o[4] : (joy_map_1 == 2'b10) ? ~joy1_o[9] : (joy_map_1 == 2'b11) ? ~joy1_o[6] : ~joy1_o[9];
+assign p1x = (joy_map_1 == 2'b01) ? ~joy1_o[5] : (joy_map_1 == 2'b10) ? ~joy1_o[8] : (joy_map_1 == 2'b11) ? ~joy1_o[8] : ~joy1_o[6];
+assign p1b = (joy_map_1 == 2'b01) ? ~joy1_o[9] : (joy_map_1 == 2'b10) ? ~joy1_o[4] : (joy_map_1 == 2'b11) ? ~joy1_o[10] : ~joy1_o[4];
+assign p1a = (joy_map_1 == 2'b01) ? ~joy1_o[8] : (joy_map_1 == 2'b10) ? ~joy1_o[5] : (joy_map_1 == 2'b11) ? ~joy1_o[9] : ~joy1_o[5];
+
+assign p2r = (joy_map_2 == 2'b01) ? ~joy2_o[10] : (joy_map_2 == 2'b10) ? ~joy2_o[6] : (joy_map_2 == 2'b11) ? ~joy2_o[5] : ~joy2_o[8];
+assign p2l = (joy_map_2 == 2'b01) ? ~joy2_o[6] : (joy_map_2 == 2'b10) ? ~joy2_o[10] : (joy_map_2 == 2'b11) ? ~joy2_o[4] : ~joy2_o[10];
+assign p2y = (joy_map_2 == 2'b01) ? ~joy2_o[4] : (joy_map_2 == 2'b10) ? ~joy2_o[9] : (joy_map_2 == 2'b11) ? ~joy2_o[6] : ~joy2_o[9];
+assign p2x = (joy_map_2 == 2'b01) ? ~joy2_o[5] : (joy_map_2 == 2'b10) ? ~joy2_o[8] : (joy_map_2 == 2'b11) ? ~joy2_o[8] : ~joy2_o[6];
+assign p2b = (joy_map_2 == 2'b01) ? ~joy2_o[9] : (joy_map_2 == 2'b10) ? ~joy2_o[4] : (joy_map_2 == 2'b11) ? ~joy2_o[10] : ~joy2_o[4];
+assign p2a = (joy_map_2 == 2'b01) ? ~joy2_o[8] : (joy_map_2 == 2'b10) ? ~joy2_o[5] : (joy_map_2 == 2'b11) ? ~joy2_o[9] : ~joy2_o[5];
+
+// Start Select R L Y X B A Up Down Left Right
+wire [11:0] joy0 = {~joy1_o[7] | scanSW[10], ~joy1_o[11] | scanSW[11], p1r | scanSW[9], p1l | scanSW[8], p1y | scanSW[7], p1x | scanSW[6], p1b | scanSW[5], p1a | scanSW[4], ~joy1_o[0] | scanSW[0], ~joy1_o[1] | scanSW[1], ~joy1_o[2] | scanSW[2], ~joy1_o[3] | scanSW[3]};
+wire [11:0] joy1 = {~joy2_o[7] | scanSW[23], ~joy2_o[11] | scanSW[24], p2r | scanSW[22], p2l | scanSW[21], p2y | scanSW[20], p2x | scanSW[19], p2b | scanSW[18], p2a | scanSW[17], ~joy2_o[0] | scanSW[12], ~joy2_o[1] | scanSW[13] | scanSW[14], ~joy2_o[2] | scanSW[15], ~joy2_o[3] | scanSW[16]};
 
 reg [11:0] joy2 = 12'h0;
 reg [11:0] joy3 = 12'h0;
@@ -870,7 +890,7 @@ wire bootdata_req;
 reg bootdata_ack;
 reg [23:0] ioctl_addr = 24'hFFFFFE;
 reg [15:0] ioctl_dout = 16'h0000;
-wire ioctl_download = ~host_reset_n;
+wire ioctl_download;
 reg ioctl_wr = 1'b0;
 reg [2:0] bootdata_pos = 3'b000;
 wire [31:0] ioctl_filesize;
@@ -949,7 +969,8 @@ CtrlModule control (
 	.host_reset_loader(host_reset_loader),
 	.host_bootdata(bootdata), 
 	.host_bootdata_req(bootdata_req), 
-	.host_bootdata_ack(bootdata_ack)
+	.host_bootdata_ack(bootdata_ack),
+	.host_download(ioctl_download)
 );
 
 OSD_Overlay osd (

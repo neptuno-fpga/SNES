@@ -168,7 +168,7 @@ wire   vs = scandoubler_disable ? VSync : SD_VS_O;
 
 // a minimig vga->scart cable expects a composite sync signal on the VGA_HS output.
 // and VCC on VGA_VS (to switch into rgb mode)
-assign VGA_HS = (scandoubler_disable/* || ypbpr*/)? cs : hs;
-assign VGA_VS = (scandoubler_disable/* || ypbpr*/)? 1'b1 : vs;
+assign VGA_HS = hs;
+assign VGA_VS = vs;
 
 endmodule
