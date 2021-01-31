@@ -59,21 +59,19 @@ module SNES_NEPTUNO_TOP
    output        JOY_LOAD,
    input         JOY_DATA,
    output        joyP7_o,
+   output        LRCLK,
+   output        SDIN,
+   output        SCLK,
 	output        stm_rst_o
 	
 );
 
 wire MCLK;
-wire SCLK;
-wire LRCLK;
-wire SDIN;
 assign SRAM_nWE = 1'b1;
 assign SRAM_nUB = 1'b1;
 assign SRAM_nLB = 1'b1;
 assign SRAM_A = 21'b000000000000000000000;
-assign SRAM_D[15:12] = 4'hZ;
-assign SRAM_D[11:8] = {LRCLK, SDIN, SCLK, MCLK};
-assign SRAM_D[7:0] = 8'hZZ;
+assign SRAM_D[15:0] = 16'hZZZZ;
 assign SRAM_nOE = 1'b1;
 assign stm_rst_o = 1'b0;
 
